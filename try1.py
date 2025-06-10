@@ -1,94 +1,68 @@
-// WaterTankApp.jsx
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import streamlit as st
+import random
+import time
 
-export default function WaterTankApp() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [sensorId, setSensorId] = useState("");
-  const [sensorValue, setSensorValue] = useState(50); // Simulated data
-  const [sensorInput, setSensorInput] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+st.set_page_config(page_title="Water Tank Monitor", page_icon="💧", layout="centered")
 
-  const handleLogin = () => {
-    if (username && password) setIsLoggedIn(true);
-  };
+# Initialize session state
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'sensor_id' not in st.session_state:
+    st.session_state.sensor_id = None
+if 'sensor_value' not in st.session_state:
+    st.session_state.sensor_value = random.randint(0, 100)
 
-  const handleSensorSubmit = () => {
-    if (sensorInput) {
-      setSensorId(sensorInput);
-      // Simulate data fetch
-      fetchSensorValue();
-    }
-  };
+def simulate_sensor_value():
+    """Simulate fetching new sensor data"""
+    st.session_state.sensor_value = random.randint(0, 100)
 
-  const fetchSensorValue = () => {
-    // Replace this with real API call later
-    setSensorValue(Math.floor(Math.random() * 100));
-  };
+# Login page
+if not st.session_state.logged_in:
+    st.title("🔐 Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Sign In"):
+        if username and password:
+            st.session_state.logged_in = True
+        else:
+            st.error("Enter both username and password.")
 
-  useEffect(() => {
-    if (sensorId) {
-      const interval = setInterval(fetchSensorValue, 5000); // Refresh every 5s
-      return () => clearInterval(interval);
-    }
-  }, [sensorId]);
+# Sensor ID input
+elif not st.session_state.sensor_id:
+    st.title("🛰️ Connect Sensor")
+    sensor_id = st.text_input("Enter Sensor ID")
+    if st.button("Connect Sensor"):
+        if sensor_id:
+            st.session_state.sensor_id = sensor_id
+            simulate_sensor_value()
+        else:
+            st.error("Sensor ID cannot be empty.")
 
-  const tankHeight = 300;
-  const fillHeight = (sensorValue / 100) * tankHeight;
+# Water Tank UI
+else:
+    st.title("💧 Water Tank Live Visualization")
+    st.markdown(f"**Sensor ID**: `{st.session_state.sensor_id}`")
+    st.markdown("---")
 
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom right, #bfdbfe, #c7d2fe)', padding: '1rem' }}>
-      {!isLoggedIn ? (
-        <div style={{ width: '100%', maxWidth: '400px', padding: '1.5rem', backgroundColor: '#fff', borderRadius: '1rem', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>Login</h2>
-          <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} style={inputStyle} />
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} />
-          <button onClick={handleLogin} style={buttonStyle}>Sign In</button>
-        </div>
-      ) : !sensorId ? (
-        <div style={{ width: '100%', maxWidth: '400px', padding: '1.5rem', backgroundColor: '#fff', borderRadius: '1rem', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>Enter Sensor ID</h2>
-          <input type="text" placeholder="Sensor ID" value={sensorInput} onChange={(e) => setSensorInput(e.target.value)} style={inputStyle} />
-          <button onClick={handleSensorSubmit} style={buttonStyle}>Connect</button>
-        </div>
-      ) : (
-        <div style={{ width: '100%', maxWidth: '600px', padding: '1.5rem', backgroundColor: '#fff', borderRadius: '1rem', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', textAlign: 'center' }}>Water Tank Live Visualization</h2>
-          <div style={{ position: 'relative', width: '8rem', height: '300px', border: '4px solid #2563eb', borderBottomLeftRadius: '9999px', borderBottomRightRadius: '9999px', backgroundColor: '#dbeafe', overflow: 'hidden', margin: '0 auto' }}>
-            <motion.div
-              style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', backgroundColor: '#3b82f6' }}
-              initial={{ height: 0 }}
-              animate={{ height: fillHeight }}
-              transition={{ duration: 1 }}
-            />
-            <div style={{ position: 'absolute', bottom: '0.5rem', width: '100%', textAlign: 'center', color: 'white', fontWeight: 'bold', fontSize: '1.125rem' }}>
-              {sensorValue}%
+    sensor_val = st.session_state.sensor_value
+    tank_height = 300  # Just for scale
+    fill_percent = (sensor_val / 100)
+
+    # Display tank
+    st.markdown(f"""
+        <div style="width: 150px; height: {tank_height}px; border: 4px solid #2563eb;
+                    border-bottom-left-radius: 80px; border-bottom-right-radius: 80px;
+                    background: #dbeafe; margin: auto; position: relative; overflow: hidden;">
+            <div style="position: absolute; bottom: 0; width: 100%; height: {int(fill_percent * tank_height)}px;
+                        background-color: #3b82f6; transition: height 1s;"></div>
+            <div style="position: absolute; bottom: 10px; width: 100%; text-align: center;
+                        color: white; font-weight: bold; font-size: 1.25rem;">
+                {sensor_val}%
             </div>
-          </div>
-          <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280', textAlign: 'center' }}>Sensor ID: {sensorId}</p>
         </div>
-      )}
-    </div>
-  );
-}
+    """, unsafe_allow_html=True)
 
-const inputStyle = {
-  width: '100%',
-  padding: '0.75rem',
-  marginTop: '1rem',
-  borderRadius: '0.5rem',
-  border: '1px solid #d1d5db',
-  outline: 'none'
-};
-
-const buttonStyle = {
-  width: '100%',
-  padding: '0.75rem',
-  marginTop: '1rem',
-  borderRadius: '0.5rem',
-  backgroundColor: '#2563eb',
-  color: '#fff',
-  border: 'none',
-  fontWeight: 'bold'
-};
+    st.markdown("---")
+    if st.button("🔄 Refresh Sensor Data"):
+        simulate_sensor_value()
+        st.experimental_rerun()
